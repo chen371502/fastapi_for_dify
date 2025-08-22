@@ -1,20 +1,30 @@
 # LMStudio FastAPI 聊天接口服务
 
-这个项目提供了一个 FastAPI 后端服务，用于包装 LMStudio 的 OpenAI API 接口，支持流式和非流式聊天补全功能。
+这个项目提供了两个 FastAPI 后端服务：
+- **main.py**: 完整的 LMStudio 包装服务
+- **main_dummy.py**: 轻量级测试服务，用于快速验证
 
 ## 🚀 功能特性
 
+### 完整服务 (main.py)
 - ✅ **支持流式输出** - 实时返回生成内容
 - ✅ **非流式响应** - 一次性返回完整结果  
 - ✅ **健康检查** - 监控 LMStudio 连接状态
 - ✅ **模型列表** - 获取可用模型信息
 - ✅ **OpenAI SDK 集成** - 使用官方 SDK 简化开发
 
+### 测试服务 (main_dummy.py)
+- ✅ **简化健康检查** - 基本状态检查
+- ✅ **非流式响应** - 返回固定内容 "pong."
+- ✅ **流式响应** - 返回李白《将进酒》全诗，逐句流式发送
+- ✅ **端口8001** - 独立运行，避免冲突
+
 ## 📁 项目结构
 
 ```
 .
-├── main.py          # FastAPI 主应用程序
+├── main.py          # FastAPI 主应用程序 (完整功能)
+├── main_dummy.py    # 简化测试应用程序
 ├── requirements.txt # Python 依赖列表
 ├── test_simple.py   # 基础功能测试脚本
 ├── test_stream.py   # 流式输出测试脚本
@@ -29,7 +39,7 @@
 pip install -r requirements.txt
 ```
 
-### 2. 配置 LMStudio
+### 2. 配置 LMStudio (仅main.py需要)
 
 确保 LMStudio 正在运行，并记下 API 地址：
 - **本地运行**: `http://localhost:1234/v1`
@@ -37,6 +47,7 @@ pip install -r requirements.txt
 
 ### 3. 启动服务
 
+#### 启动完整服务
 ```bash
 # 使用默认配置启动
 python main.py
@@ -44,15 +55,31 @@ python main.py
 # 或者自定义 LMStudio 地址
 LMSTUDIO_BASE_URL="http://localhost:1234/v1" python main.py
 ```
-
 服务将在 `http://localhost:8000` 启动。
+
+#### 启动测试服务
+```bash
+python main_dummy.py
+```
+服务将在 `http://localhost:8001` 启动。
+
+### 4. 同时运行两个服务
+```bash
+# 终端1 (完整服务)
+python main.py
+
+# 终端2 (测试服务)
+python main_dummy.py
+```
 
 ## 📡 API 接口
 
-### 1. 聊天补全 (支持流式)
+### 完整服务 (main.py - 端口8000)
+
+#### 聊天补全 (支持流式)
 **POST** `/chat/completions`
 
-#### 流式输出示例：
+**流式输出示例：**
 ```bash
 curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
@@ -66,7 +93,7 @@ curl -X POST http://localhost:8000/chat/completions \
   }'
 ```
 
-#### 非流式输出示例：
+**非流式输出示例：**
 ```bash
 curl -X POST http://localhost:8000/chat/completions \
   -H "Content-Type: application/json" \
@@ -80,18 +107,48 @@ curl -X POST http://localhost:8000/chat/completions \
   }'
 ```
 
-### 2. 健康检查
-**GET** `/health`
-
+**健康检查：**
 ```bash
 curl http://localhost:8000/health
 ```
 
-### 3. 获取模型列表
-**GET** `/models`
-
+**获取模型列表：**
 ```bash
 curl http://localhost:8000/models
+```
+
+### 测试服务 (main_dummy.py - 端口8001)
+
+#### 聊天补全 (固定响应)
+**POST** `/chat/completions`
+
+**非流式输出示例 (返回 "pong.")：**
+```bash
+curl -X POST http://localhost:8001/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "hello"}
+    ],
+    "stream": false
+  }'
+```
+
+**流式输出示例 (返回《将进酒》)：**
+```bash
+curl -X POST http://localhost:8001/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "请朗诵一首诗"}
+    ],
+    "stream": true
+  }'
+```
+
+**健康检查：**
+```bash
+curl http://localhost:8001/health
 ```
 
 ## 🧪 测试脚本
