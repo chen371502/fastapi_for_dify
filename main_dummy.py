@@ -83,23 +83,6 @@ async def generate_streaming_poetry(request_id: str, user_message: str):
         import asyncio
         await asyncio.sleep(0.5)
     
-    # Final chunk
-    final_chunk = {
-        "id": f"chatcmpl-{request_id}",
-        "object": "chat.completion.chunk",
-        "created": int(time.time()),
-        "model": "dummy-model",
-        "choices": [
-            {
-                "index": 0,
-                "delta": {},
-                "finish_reason": None
-            }
-        ]
-    }
-    
-    yield f"data: {json.dumps(final_chunk)}\n\n"
-    
     # 添加空行和用户输入回显
     echo_chunk = {
         "id": f"chatcmpl-{request_id}",
