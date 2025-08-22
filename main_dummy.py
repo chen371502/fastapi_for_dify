@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import logging
@@ -35,20 +35,12 @@ class ChatCompletionRequest(BaseModel):
     top_p: Optional[float] = 1.0
     stream: Optional[bool] = False
 
-class ChatCompletionResponse(BaseModel):
-    id: str
-    object: str
-    created: int
-    model: str
-    choices: List[Dict[str, Any]]
-    usage: Dict[str, Any]
-
 @app.get("/health")
 async def health_check():
     """Simple health check endpoint"""
     return {"status": "healthy", "dummy": "running"}
 
-async def generate_streaming_poetry(request_id: str):
+async def generate_streaming_poetry(request_id: str, user_message: str):
     """Generate streaming response with 将进酒 poem"""
     poem_lines = [
         "君不见，黄河之水天上来，奔流到海不复回。",
@@ -107,12 +99,46 @@ async def generate_streaming_poetry(request_id: str):
     }
     
     yield f"data: {json.dumps(final_chunk)}\n\n"
+    
+    # 添加空行和用户输入回显
+    echo_chunk = {
+        "id": f"chatcmpl-{request_id}",
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": "dummy-model",
+        "choices": [
+            {
+                "index": 0,
+                "delta": {
+                    "content": "\n\n您刚才输入的内容是: " + user_message
+                },
+                "finish_reason": None
+            }
+        ]
+    }
+    yield f"data: {json.dumps(echo_chunk)}\n\n"
+    
+    # 最终结束chunk
+    final_echo_chunk = {
+        "id": f"chatcmpl-{request_id}",
+        "object": "chat.completion.chunk",
+        "created": int(time.time()),
+        "model": "dummy-model",
+        "choices": [
+            {
+                "index": 0,
+                "delta": {},
+                "finish_reason": "stop"
+            }
+        ]
+    }
+    yield f"data: {json.dumps(final_echo_chunk)}\n\n"
     yield "data: [DONE]\n\n"
     
-    logger.info(f"[{request_id}] Poetry streaming completed")
+    logger.info(f"[{request_id}] Poetry streaming completed with user input echo")
 
 @app.post("/chat/completions")
-async def chat_completions(request: ChatCompletionRequest, fastapi_request: Request):
+async def chat_completions(request: ChatCompletionRequest):
     """Handle chat completions with dummy responses"""
     request_id = str(uuid.uuid4())
     
@@ -121,9 +147,11 @@ async def chat_completions(request: ChatCompletionRequest, fastapi_request: Requ
     
     try:
         if request.stream:
-            logger.info(f"[{request_id}] Starting streaming response (将进酒)")
+            # 获取用户最后一条消息用于回显
+            user_message = request.messages[-1].content if request.messages else ""
+            logger.info(f"[{request_id}] Starting streaming response (将进酒), user input: {user_message}")
             return StreamingResponse(
-                generate_streaming_poetry(request_id),
+                generate_streaming_poetry(request_id, user_message),
                 media_type="text/event-stream",
                 headers={
                     "Cache-Control": "no-cache",

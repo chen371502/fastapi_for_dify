@@ -134,7 +134,7 @@ curl -X POST http://localhost:8001/chat/completions \
   }'
 ```
 
-**流式输出示例 (返回《将进酒》)：**
+**流式输出示例 (返回《将进酒》+用户输入回显)：**
 ```bash
 curl -X POST http://localhost:8001/chat/completions \
   -H "Content-Type: application/json" \
@@ -145,6 +145,11 @@ curl -X POST http://localhost:8001/chat/completions \
     "stream": true
   }'
 ```
+
+**流式输出内容：**
+1. 逐句返回《将进酒》全诗
+2. 空行分隔
+3. 回显用户输入：`您刚才输入的内容是: 请朗诵一首诗`
 
 **健康检查：**
 ```bash
