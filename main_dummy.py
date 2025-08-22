@@ -93,7 +93,7 @@ async def generate_streaming_poetry(request_id: str, user_message: str):
             {
                 "index": 0,
                 "delta": {},
-                "finish_reason": "stop"
+                "finish_reason": None
             }
         ]
     }
@@ -112,7 +112,7 @@ async def generate_streaming_poetry(request_id: str, user_message: str):
                 "delta": {
                     "content": "\n\n您刚才输入的内容是: " + user_message
                 },
-                "finish_reason": None
+                "finish_reason": "stop"
             }
         ]
     }
